@@ -20,6 +20,8 @@ python -m pip install -r requirements.txt
 # Linux: set JAVA_HOME to your JDK 11 installation first.
 python scripts/run_all.py --smoke
 python scripts/run_all.py
+python scripts/run_aqe.py
+python scripts/check_aqe.py build/aqe-results/aqe.json --expect coalesced
 python -m unittest discover -s tests -v
 python scripts/build_site.py
 python scripts/check_site.py
@@ -46,4 +48,10 @@ Clone or extract into a working copy. Make a hypothesis in `docs/experiment-temp
 
 ## Next scope
 
-The core deliberately stops before multi-host scaling, scheduling fairness, distributed consensus, advanced distributed algorithms, storage-engine internals and production capacity planning. Optional follow-ups include I/O layout and AQE experiments from Chapter 06. For stateful streaming and changing data, use the linked Streaming Lab.
+The core deliberately stops before multi-host scaling, scheduling fairness, distributed consensus, advanced distributed algorithms, storage-engine internals and production capacity planning. Chapter 07 now executes AQE coalescing, its one-byte counterexample and a changed-input exercise. I/O layout, AQE skew Join and actual executor-failure recovery remain follow-ups. See the [verified course map](/distributed-compute-lab/en/courses/) for precise readings and original exercises. For stateful streaming and changing data, use the linked Streaming Lab.
+
+## Reproduce the new adaptive-plan learning loop
+
+The five-experiment runner deliberately retains the original AQE-disabled baseline. Use `python scripts/run_aqe.py` separately for the new experiment; its default writes `build/aqe-results/` without replacing committed evidence. Follow [Chapter 07](/distributed-compute-lab/en/07-aqe/) for controls, the one-byte counterexample, and a seed/size/partition modification. Run `scripts/check_aqe.py` on each result to independently verify full per-key output, finalized plans, reader specs and actual task stages. To deliberately refresh the release reports, use `python scripts/run_aqe.py --out results` and `python scripts/run_aqe.py --advisory-bytes 1 --repeats 1 --out results --name aqe-1-byte`; selective exports preserve the earlier result inventory.
+
+The new runner uses a fresh session-owned temporary directory and removes its raw events, logs and scratch after export, including on failure. Only sanitized JSON remains. It applies no forced Spill threshold. Do not interpret old Join strategy plans as final AQE plans: the new AQE action saves both the exact pre-collect and finalized post-collect plans.

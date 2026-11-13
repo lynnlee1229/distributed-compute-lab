@@ -8,16 +8,18 @@ def load(name,root=ROOT/'results'):
 class EvidenceContracts(unittest.TestCase):
     def test_hashed_inventory_and_runtime(self):
         index=json.loads((ROOT/'results/index.json').read_text())
-        self.assertEqual({r['experiment'] for r in index},{'parallel','aggregation','join','recovery','resources'})
+        self.assertEqual({r['experiment'] for r in index},{'parallel','aggregation','join','recovery','resources','aqe','aqe-1-byte'})
         for item in index:
             self.assertEqual(hashlib.sha256((ROOT/'results'/item['file']).read_bytes()).hexdigest(),item['sha256'])
             r=load(item['experiment']);self.assertEqual(r['environment']['spark'],'3.5.8')
             self.assertTrue(r['environment']['java'].startswith('11.'))
             self.assertEqual(r['environment']['master'],'local[2,2]')
             self.assertEqual(r['input']['rows'],240000)
-            self.assertFalse(r['environment']['aqe'])
+            if r['experiment']=='aqe':
+                self.assertEqual(r['environment']['aqe'],'per variant')
+            else:self.assertFalse(r['environment']['aqe'])
             self.assertTrue(all(t['remote_read_bytes']==0 for t in r['tasks']))
-            self.assertTrue(all(s['repeats']==3 for s in r['summary'].values()))
+            self.assertTrue(all(s['repeats']==(1 if item['experiment']=='aqe-1-byte' else 3) for s in r['summary'].values()))
 
     def test_parallel_preserves_independent_sum(self):
         r=load('parallel')
@@ -84,6 +86,14 @@ class EvidenceContracts(unittest.TestCase):
             self.assertNotIn('never-export-this',result);self.assertNotIn('private-stack',result)
             self.assertEqual(r['runs'][0]['metrics']['shuffle_write_bytes'],123)
             self.assertEqual(r['runs'][1]['metrics']['tasks'],0)
+            # A selective rerun must not drop a previous report from the manifest.
+            second=root/'second-input/next';second.mkdir(parents=True)
+            (second/'report.json').write_text(json.dumps(report))
+            prior_hash=hashlib.sha256((root/'out/probe.json').read_bytes()).hexdigest()
+            subprocess.run([sys.executable,str(ROOT/'scripts/export_results.py'),'--root',str(root/'second-input'),'--out',str(root/'out')],check=True,capture_output=True)
+            inventory=json.loads((root/'out/index.json').read_text())
+            self.assertEqual({x['file'] for x in inventory},{'probe.json','next.json'})
+            self.assertEqual(next(x['sha256'] for x in inventory if x['file']=='probe.json'),prior_hash)
 
     def test_smoke_when_present_has_successful_mechanisms(self):
         smoke=ROOT/'build/smoke-results'

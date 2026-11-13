@@ -26,7 +26,7 @@ for f in OUT.rglob('*.html'):
         assert p.h1==1,(f,p.h1)
         assert set(p.alt)=={'en-US','zh-CN','x-default'},f
         assert p.lang==('zh-CN' if '/zh/' in str(f) else 'en-US')
-assert len(pages)==21,len(pages)
+assert len(pages)==25,len(pages)
 for f,p in pages.items():
     for link in p.links:
         u=urlparse(urljoin('https://lynnlee1229.github.io/'+str(f.relative_to(SITE)),link))
@@ -48,10 +48,10 @@ with zipfile.ZipFile(OUT/'downloads/distributed-compute-lab.zip') as z:
     assert all(n.startswith('distributed-compute-lab/') and '..' not in Path(n).parts for n in names)
     assert not any(set(Path(n).parts)&{'build','.venv','.git','__pycache__','myWebsiteSource'} for n in names)
     assert not any(n.endswith(('.log','.env','.pem','.key')) for n in names)
-    assert all('distributed-compute-lab/'+n in names for n in ['experiments/run.py','scripts/run_all.py','scripts/export_results.py','tests/test_evidence.py','requirements.txt','LICENSE','README.md','VALIDATION.md'])
+    assert all('distributed-compute-lab/'+n in names for n in ['experiments/run.py','experiments/aqe.py','scripts/run_all.py','scripts/run_aqe.py','scripts/check_aqe.py','scripts/export_results.py','resources/catalog.json','tests/test_evidence.py','requirements.txt','LICENSE','README.md','VALIDATION.md'])
     for n in names:
         if n.endswith(('.md','.json','.py','.yml','.txt','.js','.css')):
             text=z.read(n).decode()
             # Scanner source may intentionally mention forbidden path/token patterns; actual personal paths are forbidden.
             assert not re.search(r'/Users/[A-Za-z0-9]|/home/[A-Za-z0-9]|/private/(?:tmp|var)/|sk-proj-[A-Za-z0-9]{10}|gh[pous]_[A-Za-z0-9]{20}',text),n
-print('PASS: 20 paired content pages + redirect; translations, links, anchors, hashes, source archive and privacy')
+print('PASS: 24 paired content pages + redirect; translations, links, anchors, hashes, source archive and privacy')

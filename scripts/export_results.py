@@ -41,6 +41,11 @@ for directory in sorted(a.root.iterdir()):
         row['metrics'].update({'tasks':len(own),'failed_attempts':sum(not t['successful'] for t in own),
              'stages':len({t['stage'] for t in own}),'max_task_ms':max([t['duration_ms'] for t in own] or [0]),
              'peak_execution_bytes':max([t['peak_execution_bytes'] for t in own] or [0])})
+        if r.get('experiment')=='aqe':
+            row['stage_metrics']=[{'stage':stage,'attempts':sum(t['stage']==stage for t in own),
+                'shuffle_read_bytes':sum(t['shuffle_read_bytes'] for t in own if t['stage']==stage),
+                'shuffle_write_bytes':sum(t['shuffle_write_bytes'] for t in own if t['stage']==stage)}
+                for stage in sorted({t['stage'] for t in own})]
     r['tasks']=tasks
     r['summary']={}
     for variant in dict.fromkeys(row['variant'] for row in r['runs']):
@@ -53,5 +58,13 @@ for directory in sorted(a.root.iterdir()):
     target=a.out/(directory.name+'.json');target.write_text(text)
     index.append({'experiment':directory.name,'file':target.name,'sha256':hashlib.sha256(target.read_bytes()).hexdigest(),
         'measured_runs':sum(not x['warmup'] for x in r['runs']),'tasks':len(tasks)})
+# A selective rerun must retain the inventory of earlier sanitized reports.
+index=[]
+for target in sorted(a.out.glob('*.json')):
+    if target.name=='index.json':continue
+    r=json.loads(target.read_text())
+    index.append({'experiment':target.stem,'file':target.name,
+        'sha256':hashlib.sha256(target.read_bytes()).hexdigest(),
+        'measured_runs':sum(not x['warmup'] for x in r['runs']),'tasks':len(r['tasks'])})
 (a.out/'index.json').write_text(json.dumps(index,indent=2)+'\n')
 print('EXPORTED',len(index),'allowlisted experiment reports')

@@ -38,7 +38,7 @@ python scripts/run_all.py --only resources
 
 ## 数据布局与自适应执行
 
-存储分区可裁剪无关文件，列式格式可跳过无用列，大量小文件会增加元数据与调度工作。这些影响需要 I/O 实验，本版的内存生成数据没有测量它们。AQE 可以根据运行时信息合并 Shuffle 分区、改变 Join 策略，或处理受支持的倾斜场景。基线关闭 AQE，打开它属于明确未测的扩展；需要检查最终计划与实际指标才可判断收益。[AQE 参考](https://spark.apache.org/docs/3.5.8/sql-performance-tuning.html#adaptive-query-execution)
+存储分区可裁剪无关文件，列式格式可跳过无用列，大量小文件会增加元数据与调度工作。这些影响需要 I/O 实验，本版的内存生成数据没有测量它们。AQE 可以根据运行时信息合并 Shuffle 分区、改变 Join 策略，或处理受支持的倾斜场景。五类原始基线关闭 AQE。新增第 07 单元实际执行 Shuffle 后分区合并，包含两个对照和一字节反例，并核验最终计划与实际任务指标。AQE skew Join 与 Join 策略转换仍未实测。[运行 AQE 实操](/distributed-compute-lab/zh/07-aqe/)[AQE 参考](https://spark.apache.org/docs/3.5.8/sql-performance-tuning.html#adaptive-query-execution)
 
 ? Spill 非零是否说明堆已耗尽？
 

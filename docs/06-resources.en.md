@@ -38,7 +38,7 @@ A diagnostic sequence is: locate the slow stage, inspect task spread, check byte
 
 ## Data layout and adaptive execution
 
-Storage partitioning can prune irrelevant files; columnar formats can avoid reading unused columns; many tiny files can add metadata and scheduling work. Those effects require an I/O experiment, not this generated in-memory source. AQE can coalesce Shuffle partitions, change Join strategy and handle supported skew cases based on runtime information. The current baseline disables AQE; enabling it is an explicitly unmeasured extension. Inspect final plans and actual metrics before claiming it helped. [AQE reference](https://spark.apache.org/docs/3.5.8/sql-performance-tuning.html#adaptive-query-execution)
+Storage partitioning can prune irrelevant files; columnar formats can avoid reading unused columns; many tiny files can add metadata and scheduling work. Those effects require an I/O experiment, not this generated in-memory source. AQE can coalesce Shuffle partitions, change Join strategy and handle supported skew cases based on runtime information. The five original baseline experiments disable AQE. The new Chapter 07 executes post-shuffle coalescing with two controls and a one-byte counterexample; it checks the final plan and actual task metrics. AQE skew Join and Join-strategy conversion remain unmeasured. [Run the AQE walkthrough](/distributed-compute-lab/en/07-aqe/) [AQE reference](https://spark.apache.org/docs/3.5.8/sql-performance-tuning.html#adaptive-query-execution)
 
 ? Does nonzero Spill mean the heap was exhausted?
 

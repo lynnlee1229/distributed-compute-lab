@@ -4,7 +4,7 @@
 
 An original foundation-first course with real, bounded Spark experiments. Learn work and scheduling overhead; MapReduce, dependencies and stages; aggregation and data movement; Join and skew; retry, cache and checkpoint; resource diagnosis. Each chapter provides prerequisites, goals, explanations, runnable examples, practice, interpretation and self-check answers. No domain-specific background is assumed.
 
-Five executed experiments use deterministic synthetic data. The site lets you inspect saved outputs, all repetitions, task attempts, metrics, lineage, physical plans and executable source. The cost calculator is an illustrative model, explicitly separate from measured evidence.
+Six executed experiments use deterministic synthetic data. The site lets you inspect saved outputs, all repetitions, task attempts, metrics, lineage, physical plans and executable source. The cost calculator is an illustrative model, explicitly separate from measured evidence.
 
 ## Reproduce
 
@@ -17,6 +17,8 @@ python -m pip install -r requirements.txt
 # Linux: set JAVA_HOME to JDK 11. macOS: runner selects JDK 11.
 python scripts/run_all.py --smoke
 python scripts/run_all.py
+python scripts/run_aqe.py
+python scripts/check_aqe.py build/aqe-results/aqe.json --expect coalesced
 python -m unittest discover -s tests -v
 python scripts/build_site.py
 python scripts/check_site.py
@@ -34,8 +36,9 @@ Open `http://localhost:18913/distributed-compute-lab/en/`. Run `--only aggregati
 | join | sort-merge / broadcast / salted | unique dimension; count + weight sum; output partition histogram; plans |
 | recovery | first-attempt failure; cached / removed; checkpoint | successful retry; 8/0/8 partition evaluations; lineage truncation; 3 traces |
 | resources | 2 / 16 sort partitions | row count, ID sum, payload length and per-partition ordering; actual Spill |
+| aqe | AQE off / on without coalescing / on with coalescing | full per-key count/sum; exact final plan, SQL reader metrics and TaskEnd stages; 1-byte counterexample |
 
-Resources uses an explicitly **forced 8,192-element Spill threshold** to exercise an external sorter safely. It is not a natural OOM benchmark or a recommended production knob. Baseline AQE and automatic broadcasting are disabled; Join broadcasts are explicit. Chapter 06 explains AQE and I/O layout as unmeasured extensions.
+Resources uses an explicitly **forced 8,192-element Spill threshold** to exercise an external sorter safely. It is not a natural OOM benchmark or a recommended production knob. The five original experiments disable AQE and automatic broadcasting; Join broadcasts are explicit. Chapter 07 now executes AQE post-shuffle coalescing. I/O layout, AQE skew Join and Join strategy conversion remain unmeasured.
 
 The recovery probe raises an exception only inside its own Spark task. It does not kill a node, driver or executor. Its local checkpoints do not survive host loss. Cache removal demonstrates lineage recomputation, not a node-failure simulation. No external sink is involved and no exactly-once side-effect claim is made.
 
@@ -48,3 +51,9 @@ Raw Spark events, scratch, checkpoints and runtime logs remain in ignored build/
 Only this companion is public. It contains no personal homepage source, private datasets, credentials, host logs or local virtual environment. `scripts/build_site.py` creates an allowlisted portable ZIP and bilingual static export using the standard library. The ZIP is independently extracted and checked in validation. Original material is MIT licensed; linked third-party papers and Apache Spark retain their own terms and are not copied into the course.
 
 See [methods and setup](docs/reproduce.en.md), [experiment template](docs/experiment-template.md), [validation evidence](VALIDATION.md), and upstream links within each chapter. CI executes the Linux smoke workload; the committed laptop measurements are separate evidence. This course does not cover production capacity planning, multi-host scaling or advanced distributed algorithms.
+
+## Course-backed learning, not only a website
+
+[Verified courses and unit map](https://lynnlee1229.github.io/distributed-compute-lab/en/courses/) selects Berkeley **CS267 Applications of Parallel Computers (Spring 2016 archive)** and MIT **6.5840 Distributed Systems (Spring 2026 published materials)**. It distinguishes public readings from registration, grading and fees, and maps seven units to particular lectures/readings/specifications plus original runnable exercises. The structured source registry is [resources/catalog.json](resources/catalog.json); search with `python scripts/search_resources.py MapReduce` or `--unit 05-recovery`. We link MIT's specification but do not publish its prohibited assignment solutions. Historical materials are dated; pinned Spark guides supply implementation detail. ZeRO and Orca are explicitly unimplemented AI reading bridges for sharding, communication and tail latency.
+
+Follow [the AQE walkthrough](docs/07-aqe.en.md): predict → run three controls → verify full output and final plans → inspect task stages → run the one-byte counterexample → change seed/rows/partitions. `scripts/run_aqe.py` defaults to ignored `build/aqe-results/`, leaves the five original reports intact, and cleans its own raw temporary artifacts. `scripts/check_aqe.py` uses a second independent enumeration to verify results and checks plan/task agreement. Committed `results/aqe.json` has three measured repeats; `results/aqe-1-byte.json` is a one-repeat mechanism counterexample, not a performance estimate. See VALIDATION.md for actual observations and boundaries.

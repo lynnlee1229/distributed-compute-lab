@@ -20,10 +20,20 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install -r requirements.txt
       - run: python scripts/run_all.py --smoke
+      - name: Reproduce AQE controls, counterexample and changed input
+        run: |
+          python scripts/run_aqe.py --rows 16000 --repeats 1 --out build/aqe-smoke-results
+          python scripts/check_aqe.py build/aqe-smoke-results/aqe.json --expect coalesced
+          python scripts/run_aqe.py --rows 16000 --advisory-bytes 1 --repeats 1 --out build/aqe-tiny-results
+          python scripts/check_aqe.py build/aqe-tiny-results/aqe.json --expect unchanged
+          python scripts/run_aqe.py --rows 23017 --seed 73 --shuffle-partitions 16 --repeats 1 --out build/aqe-changed-results
+          python scripts/check_aqe.py build/aqe-changed-results/aqe.json --expect coalesced
       - run: python -m unittest discover -s tests -v
       - run: python scripts/build_site.py && python scripts/check_site.py
       - uses: actions/upload-artifact@v4
         with:
           name: sanitized-smoke-evidence
-          path: build/smoke-results/
+          path: |
+            build/smoke-results/
+            build/aqe-*-results/
           retention-days: 14

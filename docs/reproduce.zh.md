@@ -20,6 +20,8 @@ python -m pip install -r requirements.txt
 # Linux 请先把 JAVA_HOME 设为 JDK 11 安装目录。
 python scripts/run_all.py --smoke
 python scripts/run_all.py
+python scripts/run_aqe.py
+python scripts/check_aqe.py build/aqe-results/aqe.json --expect coalesced
 python -m unittest discover -s tests -v
 python scripts/build_site.py
 python scripts/check_site.py
@@ -46,4 +48,10 @@ Runner 清除继承的 Spark/Hadoop 配置变量，固定回环地址并显式�
 
 ## 后续边界
 
-核心课程止于基础执行机制，不覆盖多机扩展、调度公平性、分布式共识、高阶分布式算法、存储引擎内部或生产容量规划。可选扩展包括第六章的 I/O 布局和 AQE 实验。有状态流计算与变化数据请阅读交叉链接的 Streaming Lab。
+核心课程止于基础执行机制，不覆盖多机扩展、调度公平性、分布式共识、高阶分布式算法、存储引擎内部或生产容量规划。第七单元已执行 AQE 分区合并；I/O 布局、skew Join 与实际 Executor 故障仍是可选扩展。有状态流计算与变化数据请阅读交叉链接的 Streaming Lab。
+
+## 复现新增自适应计划闭环
+
+原五类运行器保留 AQE 关闭的基线。新增实验单独用 `python scripts/run_aqe.py`，默认写 `build/aqe-results/`，不覆盖提交结果。按[第 07 单元](/distributed-compute-lab/zh/07-aqe/)依次运行对照、一字节反例和修改种子/行数/分区练习。每份结果用 `scripts/check_aqe.py` 独立核对完整逐键输出、最终计划、reader spec 与实际任务阶段。有意刷新发布基线时才运行 `python scripts/run_aqe.py --out results` 和 `python scripts/run_aqe.py --advisory-bytes 1 --repeats 1 --out results --name aqe-1-byte`；选择性导出会保留早先结果清单。
+
+新运行器为每次调用创建自己的临时目录，导出后删除原始事件、日志与 scratch，失败时也清理，只保留脱敏 JSON；它不使用强制 Spill 阈值。旧 Join 策略计划是执行前证据，不能当作最终 AQE 计划；新增 AQE 动作分别保存同一次 collect 前与完成后的计划。I/O 布局、AQE skew Join 和实际 Executor 故障恢复仍未测。具体阅读与原创练习见[核验课程映射](/distributed-compute-lab/zh/courses/)。
